@@ -4,8 +4,8 @@ import math
 
 class Conway():
     def __init__(self):
-        self.UNIVERSE_SQUARE_SIZE = 800
-        self.CELL_SIDE_LENGTH = 10
+        self.UNIVERSE_SQUARE_SIZE = 700
+        self.CELL_SIDE_LENGTH = 7
         self.SLOW_SPEED = 500
         self.NORMAL_SPEED = 75
         self.FAST_SPEED = 1
@@ -14,6 +14,8 @@ class Conway():
 
         self.cell_list_size = int(self.UNIVERSE_SQUARE_SIZE / self.CELL_SIDE_LENGTH)
         self.cells = [[0 for i in range(self.cell_list_size)] for j in range(self.cell_list_size)]
+        self.birth_rule = [3]
+        self.survival_rule = [2, 3]
         self.animate = False
         self.outline = "black"
         self.update_speed = self.NORMAL_SPEED
@@ -21,9 +23,10 @@ class Conway():
         self.root = tkinter.Tk()
         self.root.title('conway')
         self.iterations = tkinter.IntVar()
-        self.iterations.set(0)
-        self.controls = tkinter.Frame(self.root)
+        self.iterations.set(0)        
         self.display = tkinter.Frame(self.root)
+        self.container = tkinter.Frame(self.root)
+        self.controls = tkinter.Frame(self.container)
 
         self.canvas_widget = tkinter.Canvas(self.display, bg="white", height=self.UNIVERSE_SQUARE_SIZE, width=self.UNIVERSE_SQUARE_SIZE)
         self.canvas_widget.bind("<Button-1>", self.handle_canvas_click)
@@ -39,31 +42,44 @@ class Conway():
                     fill=self.DEAD_COLOR,
                     outline=self.outline))
 
-        self.title_label = tkinter.Label(self.controls, text="Conway's Game of Life", font="bold")
-        self.info_label = tkinter.Label(self.controls, text="Click cells to turn on/off")
-        self.output_str_label = tkinter.Label(self.controls, text="Iterations:")
-        self.output_int_label = tkinter.Label(self.controls, textvariable=self.iterations)
+        self.title_label = tkinter.Label(self.container, text="Conway's Game of Life", font="bold")
+        self.info_label = tkinter.Label(self.container, text="Click cells to turn them on and off")
         self.start_stop_button = tkinter.Button(self.controls, text="START / STOP", command=self.start_stop)
         self.update_button = tkinter.Button(self.controls, text="UPDATE", command=self.update)
         self.reset_button = tkinter.Button(self.controls, text="RESET", command=self.reset)
         self.slow_speed_button = tkinter.Button(self.controls, text="SLOW", command=lambda: self.set_speed(self.SLOW_SPEED))
         self.normal_speed_button = tkinter.Button(self.controls, text="NORMAL", command=lambda: self.set_speed(self.NORMAL_SPEED))
         self.fast_speed_button = tkinter.Button(self.controls, text="FAST", command=lambda: self.set_speed(self.FAST_SPEED))
+        self.birth_rule_label = tkinter.Label(self.controls, text="Birth Rule:")
+        self.survival_rule_label = tkinter.Label(self.controls, text="Survival Rule:")
+        self.birth_rule_entry = tkinter.Entry(self.controls, width=8)
+        self.survival_rule_entry = tkinter.Entry(self.controls, width=8)
+        self.birth_rule_entry.insert(0, "3")
+        self.survival_rule_entry.insert(0, "23")
+        self.apply_button = tkinter.Button(self.controls, text="APPLY", command=self.get_rule)
+        self.output_str_label = tkinter.Label(self.controls, text="Iterations:")
+        self.output_int_label = tkinter.Label(self.controls, textvariable=self.iterations)
 
         self.display.grid(row=0, column=0, sticky="nw")
-        self.controls.grid(row=0, column=1, sticky="nw")
+        self.container.grid(row=0, column=1, sticky="nw")
+        self.controls.grid(row=3, column=0, sticky="nw")
 
         self.canvas_widget.grid(row=0, column=0, sticky="nw")
-        self.title_label.grid(row=0, column=0, sticky="nw", padx=10, pady=(0, 10))
-        self.info_label.grid(row=1, column=0, sticky="nw", padx=10, pady=(0, 10))
-        self.output_str_label.grid(row=2, column=0, sticky="nw", padx=(10, 0), pady=(0, 10))
-        self.output_int_label.grid(row=2, column=1, sticky="new", padx=(1, 1), pady=(0, 10))
-        self.start_stop_button.grid(row=3, column=0, sticky="new", padx=10, pady=(0, 10))
-        self.update_button.grid(row=4, column=0, sticky="new", padx=10, pady=(0, 10))
-        self.reset_button.grid(row=5, column=0, sticky="new", padx=10, pady=(0, 10))
-        self.slow_speed_button.grid(row=3, column=1, sticky="new", padx=10, pady=(0, 10))
-        self.normal_speed_button.grid(row=4, column=1, sticky="new", padx=10, pady=(0, 10))
-        self.fast_speed_button.grid(row=5, column=1, sticky="new", padx=10, pady=(0, 10))
+        self.title_label.grid(row=0, column=0, sticky="new", padx=10, pady=(0, 10))
+        self.info_label.grid(row=1, column=0, sticky="new", padx=10, pady=(0, 10))
+        self.start_stop_button.grid(row=2, column=0, sticky="new", padx=(10, 0), pady=(0, 10))
+        self.update_button.grid(row=3, column=0, sticky="new", padx=(10, 0), pady=(0, 10))
+        self.reset_button.grid(row=4, column=0, sticky="new", padx=(10, 0), pady=(0, 10))
+        self.slow_speed_button.grid(row=2, column=1, sticky="new", padx=10, pady=(0, 10))
+        self.normal_speed_button.grid(row=3, column=1, sticky="new", padx=10, pady=(0, 10))
+        self.fast_speed_button.grid(row=4, column=1, sticky="new", padx=10, pady=(0, 10))
+        self.birth_rule_label.grid(row=5, column=0, sticky="nw", padx=(10, 0), pady=(0, 10))
+        self.survival_rule_label.grid(row=5, column=1, sticky="nw", padx=10, pady=(0, 10))
+        self.birth_rule_entry.grid(row=6, column=0, sticky="new", padx=(10, 0), pady=(0, 10))
+        self.survival_rule_entry.grid(row=6, column=1, sticky="new", padx=10, pady=(0, 10))
+        self.apply_button.grid(row=7, column=0, sticky="new", padx=(10, 0), pady=(0, 10))
+        self.output_str_label.grid(row=8, column=0, sticky="sw", padx=(10, 0), pady=(0, 10))
+        self.output_int_label.grid(row=8, column=1, sticky="sew", padx=(1, 1), pady=(0, 10))
 
         self.root.mainloop()
 
@@ -74,6 +90,7 @@ class Conway():
         self.draw()
 
     def start_stop(self):
+        self.root.focus_set()
         self.animate = not self.animate
         if self.animate:
             self.update_button["state"] = "disabled"
@@ -84,6 +101,13 @@ class Conway():
             self.update_button["state"] = "normal"
             self.outline = "black"
             self.draw()
+
+    def get_rule(self):
+        try:
+            self.birth_rule = [int(character) for character in self.birth_rule_entry.get()]
+            self.survival_rule = [int(character) for character in self.survival_rule_entry.get()]
+        except ValueError:
+            pass
 
     def update(self):
         updated_cells = []
@@ -110,13 +134,13 @@ class Conway():
                         living_neighbors = living_neighbors + self.cells[i+1][j-1]
                     if j < self.cell_list_size - 1:
                         living_neighbors = living_neighbors + self.cells[i+1][j+1]
-                if cell_value == 1:
-                    if living_neighbors > 1 and living_neighbors < 4:
+                if cell_value == 0:
+                    if living_neighbors in self.birth_rule:
                         updated_cells[i].append(1)
                     else:
                         updated_cells[i].append(0)
                 else:
-                    if living_neighbors == 3:
+                    if living_neighbors in self.survival_rule:
                         updated_cells[i].append(1)
                     else:
                         updated_cells[i].append(0)
